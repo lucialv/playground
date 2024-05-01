@@ -1,0 +1,77 @@
+---
+import Layout from "../../layouts/Layout.astro";
+
+import { supabase } from "../../lib/supabase";
+
+const { cookies, redirect } = Astro;
+
+const accessToken = cookies.get("sb-access-token");
+const refreshToken = cookies.get("sb-refresh-token");
+
+if (!accessToken || !refreshToken) {
+  return redirect("/");
+}
+
+const { data, error } = await supabase.auth.setSession({
+  refresh_token: refreshToken.value,
+  access_token: accessToken.value,
+});
+
+// Maneja errores de sesión
+if (error) {
+  cookies.delete("sb-access-token", {
+    path: "/",
+  });
+  cookies.delete("sb-refresh-token", {
+    path: "/",
+  });
+
+  return redirect("/");
+}
+
+console.log(data);
+const name = data.user?.user_metadata.full_name || data.user?.email;
+---
+
+<Layout title="Playground">
+  <div class="hero min-h-[50vh]">
+    <div class="hero-content text-center">
+      <div class="max-w-lg">
+        <h1
+          class="font-title text-center text-[clamp(2rem,6vw,4.2rem)] font-black leading-[1.1] [word-break:auto-phrase] xl:w-[115%] xl:text-start [:root[dir=rtl]_&]:leading-[1.35]"
+        >
+          <span
+            class="[&::selection]:text-base-content brightness-150 contrast-150 [&::selection]:bg-blue-700/20"
+            >Welcome to the</span
+          >
+          <br />
+          <span class="inline-grid mb-10 leading-normal"
+            ><span
+              class="pointer-events-none col-start-1 row-start-1 bg-[linear-gradient(90deg,theme(colors.error)_0%,theme(colors.secondary)_9%,theme(colors.secondary)_42%,theme(colors.primary)_47%,theme(colors.accent)_100%)] bg-clip-text blur-xl [-webkit-text-fill-color:transparent] [transform:translate3d(0,0,0)] before:content-[attr(data-text)] [@supports(color:oklch(0%_0_0))]:bg-[linear-gradient(90deg,oklch(var(--s))_4%,color-mix(in_oklch,oklch(var(--s)),oklch(var(--er)))_22%,oklch(var(--p))_45%,color-mix(in_oklch,oklch(var(--p)),oklch(var(--a)))_67%,oklch(var(--a))_100.2%)]"
+              aria-hidden="true"
+              data-text="Testing"></span>
+            <span
+              class="[&::selection]:text-base-content relative col-start-1 row-start-1 bg-[linear-gradient(90deg,theme(colors.error)_0%,theme(colors.secondary)_9%,theme(colors.secondary)_42%,theme(colors.primary)_47%,theme(colors.accent)_100%)] bg-clip-text [-webkit-text-fill-color:transparent] [&::selection]:bg-blue-700/20 [@supports(color:oklch(0%_0_0))]:bg-[linear-gradient(90deg,oklch(var(--s))_4%,color-mix(in_oklch,oklch(var(--s)),oklch(var(--er)))_22%,oklch(var(--p))_45%,color-mix(in_oklch,oklch(var(--p)),oklch(var(--a)))_67%,oklch(var(--a))_100.2%)]"
+              >Testing</span
+            ></span
+          >
+          <span
+            class="[&::selection]:text-base-content brightness-150 contrast-150 [&::selection]:bg-blue-700/20"
+            >zone</span
+          >
+          <br />
+        </h1>
+
+        <p class="text-white text-4xl font-title font-bold mb-5">
+          Welcome <span class="text-accent">{name}</span>
+        </p>
+
+        <input
+          type="text"
+          placeholder="Type here"
+          class="input input-bordered input-primary w-full max-w-xs"
+        />
+      </div>
+    </div>
+  </div>
+</Layout>
