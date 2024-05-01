@@ -31,18 +31,37 @@ if (error) {
 
 const name = data.user?.user_metadata.full_name || data.user?.email;
 
-import { db, Profiles } from "astro:db";
+import { db, eq, Users } from "astro:db";
 
 if (Astro.request.method === "POST") {
   // parse form data
   const formData = await Astro.request.formData();
   const bio = formData.get("bio");
   const id = data.user.id;
-  if (typeof bio === "string") {
-    // insert form data into the Comment table
-    await db.insert(Profiles).values({ id, bio });
+  if (typeof bio === "string" && bio.length > 0) {
+    //if the user has a profile, update it
+    const profile = await db.select().from(Users).where(eq(Users.id, id));
+    if (profile.length === 0) {
+      //if the user doesn't have a profile, create it
+      await db.insert(Users).values({
+        id: id,
+        bio: bio,
+        username: name,
+        email: data.user.email,
+        avatar: data.user.user_metadata.avatar_url,
+      });
+    } else {
+      //if the user has a profile, update it if the bio is different
+
+      if (profile[0].bio !== bio) {
+        await db.update(Users).set({ bio: bio }).where(eq(Users.id, id));
+      } else {
+        console.log("The bio is the same");
+      }
+    }
   }
 }
+const profiles = await db.select().from(Users);
 ---
 
 <Layout title="Playground">
@@ -61,10 +80,10 @@ if (Astro.request.method === "POST") {
             ><span
               class="pointer-events-none col-start-1 row-start-1 bg-[linear-gradient(90deg,theme(colors.error)_0%,theme(colors.secondary)_9%,theme(colors.secondary)_42%,theme(colors.primary)_47%,theme(colors.accent)_100%)] bg-clip-text blur-xl [-webkit-text-fill-color:transparent] [transform:translate3d(0,0,0)] before:content-[attr(data-text)] [@supports(color:oklch(0%_0_0))]:bg-[linear-gradient(90deg,oklch(var(--s))_4%,color-mix(in_oklch,oklch(var(--s)),oklch(var(--er)))_22%,oklch(var(--p))_45%,color-mix(in_oklch,oklch(var(--p)),oklch(var(--a)))_67%,oklch(var(--a))_100.2%)]"
               aria-hidden="true"
-              data-text="Testing"></span>
+              data-text="Profile"></span>
             <span
               class="[&::selection]:text-base-content relative col-start-1 row-start-1 bg-[linear-gradient(90deg,theme(colors.error)_0%,theme(colors.secondary)_9%,theme(colors.secondary)_42%,theme(colors.primary)_47%,theme(colors.accent)_100%)] bg-clip-text [-webkit-text-fill-color:transparent] [&::selection]:bg-blue-700/20 [@supports(color:oklch(0%_0_0))]:bg-[linear-gradient(90deg,oklch(var(--s))_4%,color-mix(in_oklch,oklch(var(--s)),oklch(var(--er)))_22%,oklch(var(--p))_45%,color-mix(in_oklch,oklch(var(--p)),oklch(var(--a)))_67%,oklch(var(--a))_100.2%)]"
-              >Testing</span
+              >Profile</span
             ></span
           >
           <span
@@ -77,16 +96,47 @@ if (Astro.request.method === "POST") {
         <p class="text-white text-4xl font-title font-bold mb-5">
           Welcome <span class="text-accent">{name}</span>
         </p>
-        <form method="POST"></form>
-        <input
-          type="text"
-          id="bio"
-          name="bio"
-          placeholder="Type here"
-          class="input input-bordered input-primary w-full max-w-xs"
-        />
-        <button type="submit" class="btn btn-primary mt-5">Submit</button>
+        <form class="patata" method="POST">
+          <input
+            type="text"
+            id="bio"
+            name="bio"
+            placeholder="Change your Bio"
+            class="input input-bordered input-primary w-full max-w-xs"
+          />
+          <button type="submit" class="btn btn-primary mt-5">Submit</button>
+        </form>
+
+        <div class="mt-10">
+          <h2
+            class="text-white
+            text-4xl
+            font-title
+            font-bold
+            mb-5"
+          >
+            Profiles
+          </h2>
+          <ul class="list-none">
+            {
+              profiles.map((profile, index) => (
+                <li key={index} {...({} as any)}>
+                  <div class="flex text-xl items-center justify-center mt-4">
+                    <p>{profile.username}</p>
+                    <img
+                      class="h-8 ml-3 w-8 rounded-full"
+                      src={profile.avatar}
+                      alt="hola"
+                    />
+                  </div>
+                  <p class="text-xl">Bio: {profile.bio}</p>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
       </div>
     </div>
   </div>
+  <div class="min-h-[45vh]"></div>
 </Layout>
