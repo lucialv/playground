@@ -29,8 +29,20 @@ if (error) {
   return redirect("/");
 }
 
-console.log(data);
 const name = data.user?.user_metadata.full_name || data.user?.email;
+
+import { db, Profiles } from "astro:db";
+
+if (Astro.request.method === "POST") {
+  // parse form data
+  const formData = await Astro.request.formData();
+  const bio = formData.get("bio");
+  const id = data.user.id;
+  if (typeof bio === "string") {
+    // insert form data into the Comment table
+    await db.insert(Profiles).values({ id, bio });
+  }
+}
 ---
 
 <Layout title="Playground">
@@ -65,12 +77,15 @@ const name = data.user?.user_metadata.full_name || data.user?.email;
         <p class="text-white text-4xl font-title font-bold mb-5">
           Welcome <span class="text-accent">{name}</span>
         </p>
-
+        <form method="POST"></form>
         <input
           type="text"
+          id="bio"
+          name="bio"
           placeholder="Type here"
           class="input input-bordered input-primary w-full max-w-xs"
         />
+        <button type="submit" class="btn btn-primary mt-5">Submit</button>
       </div>
     </div>
   </div>
